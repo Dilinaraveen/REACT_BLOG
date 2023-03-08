@@ -1,74 +1,90 @@
 import axios from "axios";
-import {useEffect} from 'react'
+import {useEffect, useState, useContext} from 'react'
 import "./singlepost.css"
-import {useLocation} from "react-router-dom";
+import {Link, useLocation} from "react-router-dom";
+import {Context} from "../../context/Context";
 
 
 export default function SinglePost() {
     const location = useLocation()
     const path = location.pathname.split('/')[2];
+    const [post, setPost] = useState({})
+    const PF = "http://localhost:5000/images/"
+    const {user} = useContext(Context);
+    const [title,setTitle] = useState("");
+    const [desc,setDesc] = useState("");
+    const [updateMode,setUpdateMode] = useState(false);
 
     useEffect(() => {
         const getPost = async () => {
-            const res = axios.get("/posts/" + path);
-            console.log(res);
+            const res = await axios.get("/posts/" + path);
+            setPost(res.data);
+            setTitle(res.data.title);
+            setDesc(res.data.desc);
         }
         getPost().then(res => {
             console.log(res);
         })
             .catch(err => console.log(err));
     }, [path])
+
+    const handleDelete = async () =>{
+        try{
+            await axios.delete(`/posts/${post._id}`, {
+                data: {username:user.username},
+            });
+            window.location.replace("/");
+        }catch (e) {
+        }
+    };
+
+    const handleUpdate = async () =>{
+        try{
+            await axios.put(`/posts/${post._id}`, {
+                username:user.username, title, desc,
+            });
+            //window.location.reload();
+            setUpdateMode();
+        }catch (e) {
+        }
+    }
+
     return (
         <div className='singlePost'>
             <div className="singlePostWrapper">
+                {post.photo && (
                 <img
-                    src="https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                    src={PF+post.photo}
                     alt=""
                     className="singlePostImg"
-                />
-                <h1 className="singlePostTitle">
-                    Lorem ipsum dolor sit amet.
-                    <div className="singlePostEdit">
-                        <i className="singlePostIcon fa-regular fa-pen-to-square"></i>
-                        <i className="singlePostIcon fa-regular fa-trash-can"></i>
-                    </div>
-                </h1>
+                />)}
+                {
+                    updateMode ? <input type='text' value={title} className="singlePostTitleInput" autoFocus onChange={(e)=> setTitle(e.target.value)}/> : (
+                        <h1 className="singlePostTitle">
+                            {title}
+                            {post.username === user?.username &&
+                                <div className="singlePostEdit">
+                                    <i className="singlePostIcon fa-regular fa-pen-to-square" onClick={()=>setUpdateMode(true)}></i>
+                                    <i className="singlePostIcon fa-regular fa-trash-can" onClick={handleDelete}></i>
+                                </div>}
+
+                        </h1>
+                    )
+                }
+
                 <div className="singlePostInfo">
-                    <span className='singlePostAuthor'>Author: <b>Dilina</b></span>
-                    <span className='singlePostDate'>1 hour ago</span>
+                    <span className='singlePostAuthor'>
+                        Author:<Link to={`/?user=${post.username}`} className="link"> <b>{post.username}</b></Link></span>
+                    <span className='singlePostDate'>{new Date(post.createdAt).toDateString()}</span>
                 </div>
-                <p className='singlePostDesc'>
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate impedit magnam! Soluta, dolorum
-                    nulla.
-                    Quam quo dolores explicabo, odit odio ipsum. Ipsam dignissimos perspiciatis quidem tenetur earum.
-                </p>
+                { updateMode ? (
+                    <textarea className='singlePostDescInput' value={desc} onChange={(e)=>setDesc(e.target.value)}/>
+                ):(
+                    <p className='singlePostDesc'>{desc}</p>
+                )}
+                {updateMode && <button className="singlePostButton" onClick={handleUpdate}>Update</button>}
+
+
             </div>
         </div>
     )
